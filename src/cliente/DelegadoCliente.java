@@ -230,7 +230,7 @@ class DelegadoCliente implements Runnable {
 
         try {
             // cargar llave publica
-            nombreArchivo = "src/llaves/llave_publica";
+            nombreArchivo = "keys/llave_publica";
             archivo = new FileInputStream(nombreArchivo);
             ois = new ObjectInputStream(archivo);
             PublicKey key = (PublicKey) ois.readObject();

@@ -27,13 +27,13 @@ public class KeyGenerator {
         ObjectOutputStream oos;
         String nombreArchivo;
 
-        nombreArchivo = "src/llaves/llave_publica";
+        nombreArchivo = "keys/llave_publica";
         archivo = new FileOutputStream(nombreArchivo);
         oos = new ObjectOutputStream(archivo);
         oos.writeObject(llavePublica);
         oos.close();
 
-        nombreArchivo = "src/llaves/llave_privada";
+        nombreArchivo = "keys/llave_privada";
         archivo = new FileOutputStream(nombreArchivo);
         oos = new ObjectOutputStream(archivo);
         oos.writeObject(llavePrivada);

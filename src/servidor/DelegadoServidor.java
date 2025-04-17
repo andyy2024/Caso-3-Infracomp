@@ -183,14 +183,14 @@ private Key[] leerLLaves() {
 
     try {
         // cargar llave publica
-        nombreArchivo = "src/llaves/llave_publica";
+        nombreArchivo = "keys/llave_publica";
         archivo = new FileInputStream(nombreArchivo);
         ois = new ObjectInputStream(archivo);
         PublicKey publicKey = (PublicKey) ois.readObject();
         ois.close();
 
         // cargar llave privada
-        nombreArchivo = "src/llaves/llave_privada";
+        nombreArchivo = "keys/llave_privada";
         archivo = new FileInputStream(nombreArchivo);
         ois = new ObjectInputStream(archivo);
         PrivateKey privateKey = (PrivateKey) ois.readObject();
