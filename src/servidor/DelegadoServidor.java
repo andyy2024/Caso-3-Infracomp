@@ -82,31 +82,27 @@ class DelegadoServidor implements Runnable {
                 // 7. Genera G, P, G^x
                 AlgorithmParameterGenerator paramGen;
                 BigInteger p, g, x, G_x; // Parametros del algoritmo DH
-                try {
-                    // Generar parámetros de DH con longitud de 1024 bits
-                    paramGen = AlgorithmParameterGenerator.getInstance("DH");
-                    paramGen.init(1024); // Tamaño de 1024 bits
-                    AlgorithmParameters params = paramGen.generateParameters();
 
-                    // Extraer los parámetros p (primo) y g (generador)
-                    DHParameterSpec dhSpec = params.getParameterSpec(DHParameterSpec.class);
+                // Generar parámetros de DH con longitud de 1024 bits
+                paramGen = AlgorithmParameterGenerator.getInstance("DH");
+                paramGen.init(1024); // Tamaño de 1024 bits
+                AlgorithmParameters params = paramGen.generateParameters();
 
-                    p = dhSpec.getP();
-                    g = dhSpec.getG();
+                // Extraer los parámetros p (primo) y g (generador)
+                DHParameterSpec dhSpec = params.getParameterSpec(DHParameterSpec.class);
 
-                    // Generar x (el secreto privado), número aleatorio entre 1 y p-1
-                    SecureRandom random = new SecureRandom();
-                    do {
-                        x = new BigInteger(p.bitLength(), random);
-                    } while (x.compareTo(BigInteger.ONE) < 0 || x.compareTo(p) >= 0); // Asegura 1 <= x < p
+                p = dhSpec.getP();
+                g = dhSpec.getG();
 
-                    // Calcular G^x mod P
-                    G_x = g.modPow(x, p);
+                // Generar x (el secreto privado), número aleatorio entre 1 y p-1
+                SecureRandom random = new SecureRandom();
+                do {
+                    x = new BigInteger(p.bitLength(), random);
+                } while (x.compareTo(BigInteger.ONE) < 0 || x.compareTo(p) >= 0); // Asegura 1 <= x < p
 
-                } catch (NoSuchAlgorithmException | InvalidParameterSpecException e) {
-                    e.printStackTrace();
-                    break;
-                }
+                // Calcular G^x mod P
+                G_x = g.modPow(x, p);
+
 
                 // ------------------------------------------------------------
                 // 8. G
