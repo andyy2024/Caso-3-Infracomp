@@ -6,7 +6,6 @@ import java.net.Socket;
 import java.security.*;
 import java.util.Arrays;
 import java.util.Base64;
-import java.security.spec.InvalidParameterSpecException;
 import javax.crypto.*;
 import javax.crypto.spec.DHParameterSpec;
 import javax.crypto.spec.IvParameterSpec;

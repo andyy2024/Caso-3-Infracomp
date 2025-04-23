@@ -3,7 +3,6 @@ package utilities;
 import java.nio.ByteBuffer;
 import java.security.PrivateKey;
 import java.security.PublicKey;
-import java.security.SecureRandom;
 import java.util.Base64;
 
 import javax.crypto.Cipher;
