@@ -1,18 +1,17 @@
 package cliente;
+
 import java.io.*;
 import java.math.BigInteger;
 import java.net.Socket;
-import java.nio.ByteBuffer;
-import java.nio.charset.StandardCharsets;
 import java.security.*;
 import java.util.Arrays;
 import java.util.Base64;
 import java.util.Random;
 import javax.crypto.*;
-import javax.crypto.interfaces.DHPublicKey;
-import javax.crypto.spec.DHParameterSpec;
 import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
+
+import static utilities.CommonMethods.*;
 
 class DelegadoCliente implements Runnable {
 
@@ -28,182 +27,200 @@ class DelegadoCliente implements Runnable {
     @Override
     public void run() {
         try (PrintWriter salida = new PrintWriter(socketCliente.getOutputStream(), true);
-             BufferedReader entrada = new BufferedReader(new InputStreamReader(socketCliente.getInputStream()));
-        ) {
+                BufferedReader entrada = new BufferedReader(new InputStreamReader(socketCliente.getInputStream()));) {
 
             System.out.println(nombreDelegado + " conectado al servidor.");
             // iniciar variables antes de iniciar ^^
             Random random = new Random();
+            String linea;
+            String mensaje_descifrado, mensaje_cifrado, codigo_hmac, codigo_hmac_2;
 
             while (true) {
-                //------------------------------------------------------------
+                // ------------------------------------------------------------
                 // 0b. Leer llave de archivo
                 k_w_public = leerLLave();
                 // recorda: la llave publica se genera con llaves.KeyGenerator
 
-                //------------------------------------------------------------
+                // ------------------------------------------------------------
                 // 1. "HELLO"
                 salida.println("HELLO"); // envio saludo inicial
 
-                //------------------------------------------------------------
+                // ------------------------------------------------------------
                 // 2a. Genera un reto: numero aleatorio
-                int Reto = random.nextInt(100);
-                //------------------------------------------------------------
+                String Reto = random.nextInt(100) + "";
+                // ------------------------------------------------------------
                 // 2b. Reto
-                salida.println(Reto + "");
+                salida.println(Reto);
 
-                //------------------------------------------------------------
+                // ------------------------------------------------------------
                 // 4. Rta
-                String linea = entrada.readLine();
-                int Rta = Integer.parseInt(linea);
+                linea = entrada.readLine();
+                byte[] Rta = Base64.getDecoder().decode(linea);
 
-                //------------------------------------------------------------
+                // ------------------------------------------------------------
                 // 5a. Calcula R = D(K_w+, Rta)
-                int R = D(k_w_public, Rta);
+                String R = new String(D(k_w_public, Rta));
 
-                //------------------------------------------------------------
+                // ------------------------------------------------------------
                 // 5b. Verifica R == Reto
-                if (R != Reto) break; // si no coincide, sale
+                if (R != Reto)
+                    break; // si no coincide, sale
 
-                //------------------------------------------------------------
+                // ------------------------------------------------------------
                 // 6. "OK" | "ERROR"
                 salida.println("OK");
-                //llegua ok al servidor
+                // llegua ok al servidor
 
-                //------------------------------------------------------------
+                // ------------------------------------------------------------
                 // 8. G
                 linea = entrada.readLine();
-                int G = Integer.parseInt(linea);
+                BigInteger g = new BigInteger(linea);
 
-                //------------------------------------------------------------
+                // ------------------------------------------------------------
                 // P
                 linea = entrada.readLine();
-                int P = Integer.parseInt(linea);//P es primo de 1024 bits
+                BigInteger p = new BigInteger(linea);// P es primo de 1024 bits
 
-                //------------------------------------------------------------
+                // ------------------------------------------------------------
                 // G^x
                 linea = entrada.readLine();
-                int G_x = Integer.parseInt(linea);
+                BigInteger G_x = new BigInteger(linea);
 
-                //------------------------------------------------------------
+                // ------------------------------------------------------------
                 // F(K_w-, (G,P,G^x))
                 byte[] firma = Base64.getDecoder().decode(entrada.readLine());
 
-                //------------------------------------------------------------
+                // ------------------------------------------------------------
                 // 9. Verifica F(K_w-, (G,P,G'))
                 Signature s = Signature.getInstance("SHA256withRSA");
                 s.initVerify(k_w_public);
-                s.update(BigInteger.valueOf(G).toByteArray());
-                s.update(BigInteger.valueOf(P).toByteArray());
-                s.update(BigInteger.valueOf(G_x).toByteArray());
+                s.update(g.toByteArray());
+                s.update(p.toByteArray());
+                s.update(G_x.toByteArray());
 
                 if (!s.verify(firma)) {
                     salida.println("ERROR");
                     break;
                 }
 
-                //------------------------------------------------------------
+                // ------------------------------------------------------------
                 // 10. "OK" | "ERROR"
                 salida.println("OK"); // fin verificacion firma
 
-                //------------------------------------------------------------
+                // ------------------------------------------------------------
                 // 11a. Calcula (G^x)^y
-                BigInteger pBi = BigInteger.valueOf(P);
-                BigInteger gBi = BigInteger.valueOf(G);
-                BigInteger gxBi = BigInteger.valueOf(G_x);
-                DHParameterSpec dh = new DHParameterSpec(pBi, gBi);
-                KeyPairGenerator kpg = KeyPairGenerator.getInstance("DH");
-                kpg.initialize(dh);
-                KeyPair kp = kpg.generateKeyPair();
-                KeyAgreement ka = KeyAgreement.getInstance("DH");
-                ka.init(kp.getPrivate());
-                PublicKey servPub = KeyFactory.getInstance("DH").generatePublic(
-                        new javax.crypto.spec.DHPublicKeySpec(gxBi, pBi, gBi));
-                ka.doPhase(servPub, true);
+                BigInteger y, G_xy;
+                SecureRandom sRandom = new SecureRandom();
 
-                //------------------------------------------------------------
-                // genera llave simetrica para cifrar K_AB1
-                byte[] secreto = ka.generateSecret();
-                MessageDigest md = MessageDigest.getInstance("SHA-512");
-                byte[] dig = md.digest(secreto);
-                byte[] kEnc = Arrays.copyOf(dig, 32);
+                // Generar y (el secreto privado), número aleatorio entre 1 y p-1
+                do {
+                    y = new BigInteger(p.bitLength(), sRandom);
+                } while (y.compareTo(BigInteger.ONE) < 0 || y.compareTo(p) >= 0); // Asegura 1 <= y < p
 
-                //------------------------------------------------------------
-                // genera llave simetrica para MAC K_AB2
-                byte[] kMac = Arrays.copyOfRange(dig, 32, 64);
+                // Calcular (G^x)^y mod P
+                G_xy = G_x.modPow(y, p);
 
-                //------------------------------------------------------------
+                // ------------------------------------------------------------
+                // (1) genera llave simetrica para cifrar K_AB1
+                // (2) genera llave simetrica para MAC K_AB2
+
+                // Calcular el digest con SHA-512
+                MessageDigest digest = MessageDigest.getInstance("SHA-512");
+                byte[] masterKeyBytes = G_xy.toByteArray();
+                byte[] hashBytes = digest.digest(masterKeyBytes);
+
+                // Partir el digest en dos mitades
+                int halfLength = hashBytes.length / 2;
+                byte[] encryptionKeyBytes = Arrays.copyOfRange(hashBytes, 0, halfLength);
+                byte[] hmacKeyBytes = Arrays.copyOfRange(hashBytes, halfLength, hashBytes.length);
+
+                // crear las llaves simetricas a partir de los bytes
+                SecretKey K_AB1 = new SecretKeySpec(encryptionKeyBytes, "AES");
+                SecretKey K_AB2 = new SecretKeySpec(hmacKeyBytes, "HMACSHA256");
+
+                // ------------------------------------------------------------
                 // 11. G^y
-                DHPublicKey myPub = (DHPublicKey) kp.getPublic();
-                salida.println(myPub.getY().toString());
+                BigInteger G_y = g.modPow(y, p);
+                salida.println(G_y + "");
 
-                //------------------------------------------------------------
-                // 12a. genera iv para aes cbc
-                byte[] IV = new byte[16];
+                // ------------------------------------------------------------
+                // 12a. Genera IV
+                byte[] IV = new byte[16]; // el vector como tal
                 random.nextBytes(IV);
+                IvParameterSpec iv = new IvParameterSpec(IV); 
 
-                //------------------------------------------------------------
+                // ------------------------------------------------------------
                 // 12b. IV
                 salida.println(Base64.getEncoder().encodeToString(IV));
 
-                //------------------------------------------------------------
+                // ------------------------------------------------------------
                 // 13. C(K_AB1, tabla_ids_servicios)
-                byte[] tblCif = Base64.getDecoder().decode(entrada.readLine());
+                mensaje_cifrado = entrada.readLine();
 
-                //------------------------------------------------------------
+                // ------------------------------------------------------------
                 // HMAC(K_AB2, tabla_ids_servicios)
-                byte[] tblHmac = Base64.getDecoder().decode(entrada.readLine());
+                codigo_hmac = entrada.readLine();
 
-                //------------------------------------------------------------
-                // 13b. verifica hmac tabla
-                Mac m = Mac.getInstance("HmacSHA256");
-                m.init(new SecretKeySpec(kMac, "HmacSHA256"));
-                byte[] calc = m.doFinal(tblCif);
-                if (!Arrays.equals(calc, tblHmac)) {
+                // ------------------------------------------------------------
+                // 13b. Verifica HMAC
+
+                // desciframos la tabla primero
+                String tabla_ids_servicios = new String(D(K_AB1, mensaje_cifrado, iv));
+
+                // ciframos la tabla
+                codigo_hmac_2 = HMAC(K_AB2, tabla_ids_servicios);
+
+                if (!codigo_hmac.equals(codigo_hmac_2)) {
                     System.out.println("ERROR: hmac tabla invalido");
                     break;
                 }
 
-                //------------------------------------------------------------
+                // ------------------------------------------------------------
                 // 14. C(K_AB1, id_servicio+IP_cliente)
-                Cipher aes = Cipher.getInstance("AES/CBC/PKCS5Padding");
-                aes.init(Cipher.DECRYPT_MODE, new SecretKeySpec(kEnc, "AES"), new IvParameterSpec(IV));
-                byte[] tblDec = aes.doFinal(tblCif);
-                String[] opts = new String(tblDec, StandardCharsets.UTF_8).split(";");
-                String scel = opts[random.nextInt(opts.length)];
-                String pay = scel + ":" + socketCliente.getLocalAddress().getHostAddress();
 
-                //------------------------------------------------------------
+                String IP_cliente = "12345"; // IP falso
+
+                // Escoge al azar un servicio
+                String[] opciones = tabla_ids_servicios.split(" ");
+                String id_servicio = opciones[random.nextInt(opciones.length)];
+                
+                mensaje_cifrado = C(K_AB1, id_servicio + IP_cliente, iv);
+                salida.println(mensaje_cifrado);
+
+                // ------------------------------------------------------------
                 // HMAC(K_AB2, id_servicio+IP_cliente)
-                aes.init(Cipher.ENCRYPT_MODE, new SecretKeySpec(kEnc, "AES"), new IvParameterSpec(IV));
-                byte[] payC = aes.doFinal(pay.getBytes(StandardCharsets.UTF_8));
-                byte[] payH = m.doFinal(payC);
-                salida.println(Base64.getEncoder().encodeToString(payC));
-                salida.println(Base64.getEncoder().encodeToString(payH));
 
-                //------------------------------------------------------------
+                codigo_hmac = HMAC(K_AB2, id_servicio + IP_cliente);
+                salida.println(codigo_hmac);
+
+                // ------------------------------------------------------------
                 // 16. C(K_AB1, IP_servidor+puerto_servidor)
-                byte[] rspC = Base64.getDecoder().decode(entrada.readLine());
 
-                //------------------------------------------------------------
+                mensaje_cifrado = entrada.readLine();
+
+                // ------------------------------------------------------------
                 // HMAC(K_AB2, IP_servidor+puerto_servidor)
-                byte[] rspH = Base64.getDecoder().decode(entrada.readLine());
 
-                byte[] rspDec = aes.doFinal(rspC);
-                byte[] rspCh = m.doFinal(rspDec);
+                codigo_hmac = entrada.readLine();
 
-                //------------------------------------------------------------
-                // 17. verifica hmac y envia ok
-                if (!Arrays.equals(rspCh, rspH)) {
-                    System.out.println("ERROR: hmac final invalido");
+                // ------------------------------------------------------------
+                // 17 y 18. Verifica HMAC y evnia respuesta
+
+                // desciframos primero
+                mensaje_descifrado = new String(D(K_AB1, mensaje_cifrado, iv));
+
+                // ciframos
+                codigo_hmac = HMAC(K_AB2, mensaje_descifrado);
+
+                if (!codigo_hmac.equals(codigo_hmac_2)) {
+                    salida.println("ERROR");
                 } else {
-                    System.out.println("Servidor delegado: " + new String(rspDec));
-                    salida.println("OK"); // 18. "OK"
+                    salida.println("OK");
                 }
-                break;
+
             }
 
-        } catch (IOException | GeneralSecurityException e) {
+        } catch (Exception e) {
             System.err.println("Error en el delegado " + nombreDelegado + ": " + e.getMessage());
         } finally {
             try {
@@ -212,17 +229,9 @@ class DelegadoCliente implements Runnable {
                     System.out.println(nombreDelegado + " cerrO la conexion");
                 }
             } catch (IOException e) {
-                System.err.println("Error al cerrar la conexión en " + nombreDelegado  + e.getMessage());
+                System.err.println("Error al cerrar la conexión en " + nombreDelegado + e.getMessage());
             }
         }
-    }
-
-    private int D(PublicKey llave, int m_cifrado) throws GeneralSecurityException {
-        Cipher rsa = Cipher.getInstance("RSA");
-        rsa.init(Cipher.DECRYPT_MODE, llave);
-        ByteBuffer buf = ByteBuffer.allocate(Integer.BYTES).putInt(m_cifrado);
-        byte[] res = rsa.doFinal(buf.array());
-        return ByteBuffer.wrap(res).getInt();
     }
 
     private PublicKey leerLLave() {
