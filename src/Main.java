@@ -10,8 +10,9 @@ public class Main {
     public static void main(String[] args) throws InterruptedException {
 
         clearData();
+
+        // escoger que escenario correr:
         
-        // escoger que escenario correro:
         // escenario1();
         // escenario2();
     }
