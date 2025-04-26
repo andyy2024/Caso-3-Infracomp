@@ -16,16 +16,18 @@ import static utilities.CommonMethods.*;
 class DelegadoServidor implements Runnable {
 
     private Socket socketCliente;
+    private int solicitudes;
     private PrivateKey k_w_private;
     private PublicKey k_w_public;
     // id_servicio Servicio
     private final String tabla_ids_servicios = 
-            "S1" + // Estado vuelo
-            "S2" + // Disponibilidad vuelos
-            "S3";  // Costo de un vuelo
+            "S1 " + // Estado vuelo
+            "S2 " + // Disponibilidad vuelos
+            "S3 ";  // Costo de un vuelo
 
-    public DelegadoServidor(Socket socketCliente) {
+    public DelegadoServidor(Socket socketCliente, int solicitudes) {
         this.socketCliente = socketCliente;
+        this.solicitudes = solicitudes;
     }
 
     @Override
@@ -38,8 +40,9 @@ class DelegadoServidor implements Runnable {
 
             String mensajeParaCliente, respuestaDelCliente;
             String mensaje_descifrado, mensaje_cifrado, codigo_hmac, codigo_hmac_2;
+            long time, start, end;
 
-            while (true) {
+            for (int i = 0; i < solicitudes; i++) {
 
                 // ------------------------------------------------------------
                 // 0a. Leer llaves de archivo
@@ -50,7 +53,7 @@ class DelegadoServidor implements Runnable {
                 // ------------------------------------------------------------
                 // 1. "HELLO"
                 respuestaDelCliente = entrada.readLine();
-                if (respuestaDelCliente != "HELLO") {
+                if (!respuestaDelCliente.equals("HELLO")) {
                     break;
                 }
 
@@ -65,15 +68,15 @@ class DelegadoServidor implements Runnable {
 
                 // ------------------------------------------------------------
                 // 4. Rta
-                mensajeParaCliente = Base64.getEncoder().encodeToString(Rta.getBytes());
+                mensajeParaCliente = Rta;
                 salida.println(mensajeParaCliente);
 
                 // ------------------------------------------------------------
                 // 6. "OK" | "ERROR"
                 respuestaDelCliente = entrada.readLine();
-                if (respuestaDelCliente == "ERROR") {
+                if (respuestaDelCliente.equals("ERROR")) {
                     break;
-                } else if (respuestaDelCliente != "OK") {
+                } else if (!respuestaDelCliente.equals("OK")) {
                     break;
                 }
 
@@ -120,12 +123,18 @@ class DelegadoServidor implements Runnable {
 
                 // ------------------------------------------------------------
                 // F(K_w-, (G,P,G^x))
+
+                start = System.nanoTime();
+                // inicio firma
                 Signature s = Signature.getInstance("SHA256withRSA");
                 s.initSign(k_w_private);
                 s.update(g.toByteArray());
                 s.update(p.toByteArray());
                 s.update(G_x.toByteArray());
                 byte[] signatureBytes = s.sign();
+                // fin firma
+                end = System.nanoTime();
+                guardarInfo("firma",end - start);
 
                 mensajeParaCliente = Base64.getEncoder().encodeToString(signatureBytes);
                 salida.println(mensajeParaCliente);
@@ -133,9 +142,9 @@ class DelegadoServidor implements Runnable {
                 // ------------------------------------------------------------
                 // 10. "OK" | "ERROR"
                 respuestaDelCliente = entrada.readLine();
-                if (respuestaDelCliente == "ERROR") {
+                if (respuestaDelCliente.equals("ERROR")) {
                     break;
-                } else if (respuestaDelCliente != "OK") {
+                } else if (!respuestaDelCliente.equals("OK")) {
                     break;
                 }
 
@@ -174,8 +183,15 @@ class DelegadoServidor implements Runnable {
 
                 // ------------------------------------------------------------
                 // 13. C(K_AB1, tabla_ids_servicios)
+
+                start = System.nanoTime();
+                // inicio cifrado
                 mensajeParaCliente = C(K_AB1, tabla_ids_servicios, iv);
                 salida.println(mensajeParaCliente);
+                // fin cifrado
+                end = System.nanoTime();
+                System.out.println(end - start);
+                guardarInfo("cifrar_tabla",end - start);
 
                 // ------------------------------------------------------------
                 // HMAC(K_AB2, tabla_ids_servicios)
@@ -195,6 +211,8 @@ class DelegadoServidor implements Runnable {
                 // ------------------------------------------------------------
                 // 15. Verifica HMAC y responde
 
+                start = System.nanoTime(); //inicio verificacion
+
                 // desciframos primero
                 mensaje_descifrado = new String(D(K_AB1, mensaje_cifrado, iv));
 
@@ -205,6 +223,9 @@ class DelegadoServidor implements Runnable {
                     System.out.println("Error en la consulta");
                     break;
                 }
+                
+                end = System.nanoTime(); // fin verificacion
+                guardarInfo("verificacion", end - start);
 
                 // ------------------------------------------------------------
                 // 16. C(K_AB1, IP_servidor+puerto_servidor)
@@ -237,7 +258,7 @@ class DelegadoServidor implements Runnable {
         } finally {
             try {
                 socketCliente.close();
-                System.out.println("Conexión con " + socketCliente.getInetAddress().getHostAddress() + " cerrada.");
+                System.out.println("Conexión con el cliente " + socketCliente.getInetAddress().getHostAddress() + " cerrada.");
             } catch (IOException e) {
                 System.err.println("Error al cerrar la conexión con " + socketCliente.getInetAddress().getHostAddress()
                         + ": " + e.getMessage());
@@ -273,5 +294,14 @@ class DelegadoServidor implements Runnable {
         }
 
         return new Key[] {};
+    }
+
+    public void guardarInfo(String accion, long tiempo){
+        try (BufferedWriter bw = new BufferedWriter(new FileWriter("output/data.txt", true))) {
+            bw.write(accion + "," + tiempo);
+            bw.newLine();
+        } catch (IOException e) {
+            System.err.println("Error al escribir en el archivo: " + e.getMessage());
+        }
     }
 }

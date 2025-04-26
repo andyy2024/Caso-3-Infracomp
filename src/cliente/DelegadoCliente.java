@@ -17,11 +17,13 @@ class DelegadoCliente implements Runnable {
 
     private Socket socketCliente;
     private String nombreDelegado;
+    private int solicitudes;
     private PublicKey k_w_public;
 
-    public DelegadoCliente(Socket socketCliente, String nombreDelegado) {
+    public DelegadoCliente(Socket socketCliente, String nombreDelegado, int solicitudes) {
         this.socketCliente = socketCliente;
         this.nombreDelegado = nombreDelegado;
+        this.solicitudes = solicitudes;
     }
 
     @Override
@@ -30,12 +32,13 @@ class DelegadoCliente implements Runnable {
                 BufferedReader entrada = new BufferedReader(new InputStreamReader(socketCliente.getInputStream()));) {
 
             System.out.println(nombreDelegado + " conectado al servidor.");
+
             // iniciar variables antes de iniciar ^^
             Random random = new Random();
             String linea;
             String mensaje_descifrado, mensaje_cifrado, codigo_hmac, codigo_hmac_2;
 
-            while (true) {
+            for (int i = 0; i < solicitudes; i++) {
                 // ------------------------------------------------------------
                 // 0b. Leer llave de archivo
                 k_w_public = leerLLave();
@@ -63,7 +66,7 @@ class DelegadoCliente implements Runnable {
 
                 // ------------------------------------------------------------
                 // 5b. Verifica R == Reto
-                if (R != Reto)
+                if (!R.equals(Reto))
                     break; // si no coincide, sale
 
                 // ------------------------------------------------------------
@@ -142,12 +145,12 @@ class DelegadoCliente implements Runnable {
                 // 11. G^y
                 BigInteger G_y = g.modPow(y, p);
                 salida.println(G_y + "");
-
+                
                 // ------------------------------------------------------------
                 // 12a. Genera IV
                 byte[] IV = new byte[16]; // el vector como tal
                 random.nextBytes(IV);
-                IvParameterSpec iv = new IvParameterSpec(IV); 
+                IvParameterSpec iv = new IvParameterSpec(IV);
 
                 // ------------------------------------------------------------
                 // 12b. IV
@@ -183,7 +186,7 @@ class DelegadoCliente implements Runnable {
                 // Escoge al azar un servicio
                 String[] opciones = tabla_ids_servicios.split(" ");
                 String id_servicio = opciones[random.nextInt(opciones.length)];
-                
+
                 mensaje_cifrado = C(K_AB1, id_servicio + IP_cliente, iv);
                 salida.println(mensaje_cifrado);
 
@@ -218,11 +221,18 @@ class DelegadoCliente implements Runnable {
                     salida.println("OK");
                 }
 
+                // Termina ejecucion ^-^
+
             }
 
         } catch (Exception e) {
+
             System.err.println("Error en el delegado " + nombreDelegado + ": " + e.getMessage());
+
+            e.printStackTrace();
+
         } finally {
+
             try {
                 if (socketCliente != null && !socketCliente.isClosed()) {
                     socketCliente.close();

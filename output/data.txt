@@ -1,0 +1,13 @@
+accion,tiempo
+firma,3599800
+cifrar_tabla,3672300
+verificacion,300600
+firma,1639100
+firma,1109200
+cifrar_tabla,207100
+cifrar_tabla,511700
+verificacion,243800
+verificacion,408100
+firma,389100
+cifrar_tabla,237900
+verificacion,191500
