@@ -185,13 +185,19 @@ class DelegadoServidor implements Runnable {
                 // 13. C(K_AB1, tabla_ids_servicios)
 
                 start = System.nanoTime();
-                // inicio cifrado
+                // inicio cifrado AES
                 mensajeParaCliente = C(K_AB1, tabla_ids_servicios, iv);
                 salida.println(mensajeParaCliente);
-                // fin cifrado
+                // fin cifrado AES
                 end = System.nanoTime();
-                System.out.println(end - start);
-                guardarInfo("cifrar_tabla",end - start);
+                guardarInfo("cifrar_tabla_(simetrico)",end - start);
+
+                start = System.nanoTime();
+                // inicio cifrado RSA
+                mensajeParaCliente = C(k_w_public, tabla_ids_servicios.getBytes());
+                // fin cifrado RSA
+                end = System.nanoTime();
+                guardarInfo("cifrar_tabla_(asimetrico)",end - start);
 
                 // ------------------------------------------------------------
                 // HMAC(K_AB2, tabla_ids_servicios)

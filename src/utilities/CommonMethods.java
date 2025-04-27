@@ -1,6 +1,7 @@
 package utilities;
 
 import java.nio.ByteBuffer;
+import java.security.Key;
 import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.util.Base64;
@@ -13,7 +14,7 @@ import javax.crypto.spec.IvParameterSpec;
 public class CommonMethods {
 
     // cifrado asimetrico (byte[] m)
-    public static String C(PrivateKey llave, byte[] m) throws Exception {
+    public static String C(Key llave, byte[] m) throws Exception {
         byte[] m_cifrado;
         Cipher cifrador = Cipher.getInstance("RSA");
 

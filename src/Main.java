@@ -13,7 +13,7 @@ public class Main {
 
         // escoger que escenario correr:
         
-        // escenario1();
+        escenario1();
         // escenario2();
     }
 
@@ -55,7 +55,7 @@ public class Main {
 
     public static void clearData() {
         try (BufferedWriter bw = new BufferedWriter(new FileWriter("output/data.txt", false))) {
-            bw.write("accion,tiempo");
+            bw.write("accion,tiempo_ns");
             bw.newLine();
         } catch (IOException e) {
             System.err.println("Error al escribir en el archivo: " + e.getMessage());
