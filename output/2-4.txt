@@ -1,0 +1,17 @@
+accion,tiempo_ns
+firma,2798900
+cifrar_tabla_(simetrico),2781200
+cifrar_tabla_(asimetrico),299200
+verificacion,327500
+firma,577000
+cifrar_tabla_(simetrico),177900
+cifrar_tabla_(asimetrico),147600
+verificacion,272100
+firma,379300
+cifrar_tabla_(simetrico),164600
+cifrar_tabla_(asimetrico),174300
+verificacion,194900
+firma,372200
+cifrar_tabla_(simetrico),135700
+cifrar_tabla_(asimetrico),133300
+verificacion,139000
