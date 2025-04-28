@@ -187,14 +187,17 @@ class DelegadoServidor implements Runnable {
                 start = System.nanoTime();
                 // inicio cifrado AES
                 mensajeParaCliente = C(K_AB1, tabla_ids_servicios, iv);
-                salida.println(mensajeParaCliente);
+                
                 // fin cifrado AES
                 end = System.nanoTime();
+                salida.println(mensajeParaCliente);
+
                 guardarInfo("cifrar_tabla_(simetrico)",end - start);
 
                 start = System.nanoTime();
                 // inicio cifrado RSA
                 mensajeParaCliente = C(k_w_public, tabla_ids_servicios.getBytes());
+                
                 // fin cifrado RSA
                 end = System.nanoTime();
                 guardarInfo("cifrar_tabla_(asimetrico)",end - start);

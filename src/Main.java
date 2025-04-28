@@ -13,8 +13,8 @@ public class Main {
 
         // escoger que escenario correr:
         
-        escenario1();
-        // escenario2();
+        //escenario1();
+        escenario2();
     }
 
     private static void escenario2() throws InterruptedException {
@@ -22,7 +22,7 @@ public class Main {
         // Servidor y clientes concurrentes.
         // ---------------------------------------------------------------
 
-        int conexiones = 4; // conexiones cliente-servidor
+        int conexiones = 64; // conexiones cliente-servidor
         int solicitudes = 1; // solicitudes por cliente
         
         Servidor servidor = new Servidor(5000, conexiones, solicitudes);
