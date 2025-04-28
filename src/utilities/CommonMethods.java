@@ -13,10 +13,14 @@ import javax.crypto.spec.IvParameterSpec;
 
 public class CommonMethods {
 
+    static String PADDING = "AES/CBC/PKCS5Padding";
+
     // cifrado asimetrico (byte[] m)
     public static String C(Key llave, byte[] m) throws Exception {
         byte[] m_cifrado;
         Cipher cifrador = Cipher.getInstance("RSA");
+
+        System.out.println(llave.getEncoded().length * 8);
 
         cifrador.init(Cipher.ENCRYPT_MODE, llave);
         m_cifrado = cifrador.doFinal(m);
@@ -25,7 +29,7 @@ public class CommonMethods {
     }
 
     // cifrado asimetrico (String m)
-    public static String C(PrivateKey llave, String m) throws Exception {
+    public static String C(Key llave, String m) throws Exception {
         byte[] m_cifrado;
         Cipher cifrador = Cipher.getInstance("RSA");
 
@@ -33,6 +37,19 @@ public class CommonMethods {
         m_cifrado = cifrador.doFinal(m.getBytes());
 
         return Base64.getEncoder().encodeToString(m_cifrado);
+    }
+
+    // cifrado asimetrico (String m)
+    public static long C_time(PublicKey llave, String m) throws Exception {
+        byte[] m_cifrado;
+        Cipher cifrador = Cipher.getInstance("RSA");
+
+        cifrador.init(Cipher.ENCRYPT_MODE, llave);
+        long startTime = System.nanoTime();
+        m_cifrado = cifrador.doFinal(m.getBytes());
+        long endTime = System.nanoTime();
+
+        return endTime - startTime;
     }
 
     // cifrado simetrico (byte[] m)
@@ -48,7 +65,8 @@ public class CommonMethods {
         return Base64.getEncoder().encodeToString(m_cifrado);
     }
 
-    // cifrado simetrico (String m)
+
+    // cifrado simetrico (String m) -> byte[]
     public static String C(SecretKey llave, String m, IvParameterSpec IV) throws Exception {
         byte[] m_cifrado;
 
@@ -59,6 +77,18 @@ public class CommonMethods {
         m_cifrado = cifrador.doFinal(m.getBytes());
 
         return Base64.getEncoder().encodeToString(m_cifrado);
+    }
+
+    // cifrado simetrico (String m)
+    public static long C_time(SecretKey llave, String m, IvParameterSpec IV) throws Exception {
+        byte[] m_cifrado;
+        Cipher cifrador = Cipher.getInstance(PADDING);
+
+        cifrador.init(Cipher.ENCRYPT_MODE, llave, IV);
+        long startTime = System.nanoTime();
+        m_cifrado = cifrador.doFinal(m.getBytes());
+        long endTime = System.nanoTime();
+        return endTime - startTime;
     }
 
     // descifrado asimetrico (byte[] m_cifrado)

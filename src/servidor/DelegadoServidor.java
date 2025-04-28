@@ -23,7 +23,7 @@ class DelegadoServidor implements Runnable {
     private final String tabla_ids_servicios = 
             "S1 " + // Estado vuelo
             "S2 " + // Disponibilidad vuelos
-            "S3 ";  // Costo de un vuelo
+            "S3";  // Costo de un vuelo
 
     public DelegadoServidor(Socket socketCliente, int solicitudes) {
         this.socketCliente = socketCliente;
@@ -40,6 +40,7 @@ class DelegadoServidor implements Runnable {
 
             String mensajeParaCliente, respuestaDelCliente;
             String mensaje_descifrado, mensaje_cifrado, codigo_hmac, codigo_hmac_2;
+            byte[] bytes;
             long time, start, end;
 
             for (int i = 0; i < solicitudes; i++) {
@@ -185,22 +186,21 @@ class DelegadoServidor implements Runnable {
                 // 13. C(K_AB1, tabla_ids_servicios)
 
                 start = System.nanoTime();
-                // inicio cifrado AES
-                mensajeParaCliente = C(K_AB1, tabla_ids_servicios, iv);
-                
-                // fin cifrado AES
-                end = System.nanoTime();
-                salida.println(mensajeParaCliente);
-
-                guardarInfo("cifrar_tabla_(simetrico)",end - start);
-
-                start = System.nanoTime();
                 // inicio cifrado RSA
-                mensajeParaCliente = C(k_w_public, tabla_ids_servicios.getBytes());
-                
+                time = C_time(k_w_public, tabla_ids_servicios);
                 // fin cifrado RSA
                 end = System.nanoTime();
-                guardarInfo("cifrar_tabla_(asimetrico)",end - start);
+                guardarInfo("cifrar_tabla_(asimetrico)", time);
+
+                start = System.nanoTime();
+                // inicio cifrado AES
+                time = C_time(K_AB1, tabla_ids_servicios, iv);
+                // fin cifrado AES
+                end = System.nanoTime();
+                guardarInfo("cifrar_tabla_(simetrico)", time);
+
+                mensajeParaCliente = C(K_AB1, tabla_ids_servicios, iv);
+                salida.println(mensajeParaCliente);
 
                 // ------------------------------------------------------------
                 // HMAC(K_AB2, tabla_ids_servicios)
