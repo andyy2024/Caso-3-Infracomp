@@ -41,7 +41,7 @@ print(f"Tiempo promedio de cifrado tabla asimetrico (ns): {promedio_cifrado_tabl
 
 #print(df.head())
  
-escenario_actual = 'Escenario 2- 64 conexiones'  
+escenario_actual = 'Escenario iterativo'  
 
 
 
@@ -185,8 +185,8 @@ sns.scatterplot(x=cifrado_asim_2_16.index, y=cifrado_asim_2_16['tiempo_ns'], lab
 sns.scatterplot(x=cifrado_sim_2_32.index, y=cifrado_sim_2_32['tiempo_ns'], label='Simétrico - 2-32 clientes')
 sns.scatterplot(x=cifrado_asim_2_32.index, y=cifrado_asim_2_32['tiempo_ns'], label='Asimétrico - 2-32 clientes')
 
-sns.scatterplot(x=cifrado_sim_2_64.index, y=cifrado_sim_2_64['tiempo_ns'], label='Asimétrico - 2-64 clientes')
-sns.scatterplot(x=cifrado_asim_2_64.index, y=cifrado_asim_2_64['tiempo_ns'], label='Simétrico - 2-64 clientes')
+sns.scatterplot(x=cifrado_sim_2_64.index, y=cifrado_sim_2_64['tiempo_ns'], label='Simétrico - 2-64 clientes')
+sns.scatterplot(x=cifrado_asim_2_64.index, y=cifrado_asim_2_64['tiempo_ns'], label='Asimétrico - 2-64 clientes')
 
 plt.axhline(cifrado_sim_iterativo['tiempo_ns'].mean(), color='blue', linestyle='--')
 plt.axhline(cifrado_asim_iterativo['tiempo_ns'].mean(), color='orange', linestyle='--')
@@ -196,8 +196,8 @@ plt.axhline(cifrado_sim_2_16['tiempo_ns'].mean(), color='blue', linestyle='--')
 plt.axhline(cifrado_asim_2_16['tiempo_ns'].mean(), color='orange', linestyle='--')
 plt.axhline(cifrado_sim_2_32['tiempo_ns'].mean(), color='blue', linestyle='--')
 plt.axhline(cifrado_asim_2_32['tiempo_ns'].mean(), color='orange', linestyle='--')
-plt.axhline(cifrado_asim_2_64['tiempo_ns'].mean(), color='blue', linestyle='--')
-plt.axhline(cifrado_sim_2_64['tiempo_ns'].mean(), color='orange', linestyle='--')
+plt.axhline(cifrado_sim_2_64['tiempo_ns'].mean(), color='blue', linestyle='--')
+plt.axhline(cifrado_asim_2_64['tiempo_ns'].mean(), color='orange', linestyle='--')
 
 plt.title('Comparación de tiempos de Cifrado Simétrico vs Asimétrico en todos los escenarios')
 plt.xlabel('Mediciones')

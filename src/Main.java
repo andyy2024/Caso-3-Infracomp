@@ -14,7 +14,8 @@ public class Main {
         // escoger que escenario correr:
         
         //escenario1();
-        escenario2();
+        //escenario2();
+        estimarVelocidadProcesador();
     }
 
     private static void escenario2() throws InterruptedException {
@@ -61,4 +62,27 @@ public class Main {
             System.err.println("Error al escribir en el archivo: " + e.getMessage());
         }
     }
+
+    public static void estimarVelocidadProcesador() {
+        long operaciones = 1_000_000_000L; // Mil millones de operaciones
+        long contador = 0;
+    
+        long start = System.nanoTime();
+    
+        for (long i = 0; i < operaciones; i++) {
+            contador += i;
+        }
+    
+        long end = System.nanoTime();
+        long tiempoTotalNs = end - start;
+        double tiempoTotalSegundos = tiempoTotalNs / 1e9;
+    
+        double operacionesPorSegundo = operaciones / tiempoTotalSegundos;
+        double velocidadGHz = operacionesPorSegundo / 1e9;
+    
+        System.out.println("Tiempo total (s): " + tiempoTotalSegundos);
+        System.out.println("Operaciones por segundo: " + operacionesPorSegundo);
+        System.out.println("Velocidad aproximada de CPU (GHz): " + velocidadGHz);
+    }
+    
 }
